@@ -1,0 +1,14 @@
+class User
+  name : string
+  
+  def construct
+    @name = "test"
+  end
+end
+
+def main
+  user = new User
+  print "Done"
+end
+
+main()

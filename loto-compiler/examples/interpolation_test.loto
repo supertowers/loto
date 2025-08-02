@@ -1,0 +1,19 @@
+class Test
+  name : string
+  
+  def construct
+    @name = "Pablo"
+  end
+  
+  def show
+    "Hello #{@name}"
+  end
+end
+
+def main
+  test = new Test
+  result = test.show()
+  print result
+end
+
+main()

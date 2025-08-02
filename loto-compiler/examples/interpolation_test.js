@@ -14,8 +14,21 @@ function defined(value) {
   return value !== null && value !== undefined;
 }
 
+class Test {
+  constructor() {
+    this.name = "Pablo";
+  }
+
+  show() {
+    return `Hello ${@name}`;
+  }
+
+}
+
 function main() {
-  print("Hello, world!");
+  let test = new Test();
+  let result = test.show();
+  print(result);
 }
 
 main();

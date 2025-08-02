@@ -1,0 +1,7 @@
+def main
+  name = "Pablo"  
+  result = "Hello #{name}"
+  print result
+end
+
+main()

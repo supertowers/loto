@@ -47,26 +47,46 @@ export function lex(src) {
         continue;
       }
       
-      // String literals
+      // String literals (with interpolation support)
       const stringMatch = remaining.match(/^"([^"]*)"/);
       if (stringMatch) {
-        push({ kind: 'string', value: stringMatch[1] });
+        const stringContent = stringMatch[1];
+        
+        // Check if string contains interpolation (only #{} pattern)
+        if (stringContent.includes('#{')) {
+          push({ kind: 'interpolated_string', value: stringContent });
+        } else {
+          push({ kind: 'string', value: stringContent });
+        }
+        
         remaining = remaining.slice(stringMatch[0].length);
         continue;
       }
       
       // Symbols
-      if (remaining[0] === '(' || remaining[0] === ')' || remaining[0] === ':') {
+      if (remaining[0] === '(' || remaining[0] === ')' || remaining[0] === ':' || 
+          remaining[0] === '.' || remaining[0] === '=' || remaining[0] === '{' || 
+          remaining[0] === '}' || remaining[0] === ',') {
         push({ kind: 'symbol', value: remaining[0] });
         remaining = remaining.slice(1);
         continue;
+      }
+      
+      // Instance variables (@variable)
+      if (remaining[0] === '@') {
+        const varMatch = remaining.match(/^@[a-zA-Z_][a-zA-Z0-9_]*/);
+        if (varMatch) {
+          push({ kind: 'instance_var', value: varMatch[0] });
+          remaining = remaining.slice(varMatch[0].length);
+          continue;
+        }
       }
       
       // Keywords and identifiers
       const wordMatch = remaining.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
       if (wordMatch) {
         const word = wordMatch[0];
-        const keywords = ['def', 'end', 'print', 'if', 'else', 'elsif', 'return', 'true', 'false', 'null'];
+        const keywords = ['def', 'end', 'print', 'if', 'else', 'elsif', 'return', 'true', 'false', 'null', 'class', 'new', 'construct'];
         const kind = keywords.includes(word) ? 'keyword' : 'identifier';
         push({ kind, value: word });
         remaining = remaining.slice(word.length);

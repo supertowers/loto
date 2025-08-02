@@ -9,7 +9,12 @@ export function generate(ast) {
   output.push('');
   output.push('// Runtime helpers');
   output.push('function print(value) {');
-  output.push('  console.log(value);');
+  output.push('  // If the value has a print method, call it');
+  output.push('  if (value && typeof value.print === "function") {');
+  output.push('    console.log(value.print());');
+  output.push('  } else {');
+  output.push('    console.log(value);');
+  output.push('  }');
   output.push('}');
   output.push('');
   output.push('function defined(value) {');
@@ -30,7 +35,8 @@ function generateStatement(node, output, indent = 0) {
   
   switch (node.kind) {
     case 'FunctionDeclaration':
-      output.push(`${indentStr}function ${node.name}() {`);
+      const params = (node.parameters || []).map(p => p.name || p).join(', ');
+      output.push(`${indentStr}function ${node.name}(${params}) {`);
       for (const stmt of node.body) {
         generateStatement(stmt, output, indent + 1);
       }
@@ -38,8 +44,62 @@ function generateStatement(node, output, indent = 0) {
       output.push('');
       break;
       
+    case 'ClassDeclaration':
+      output.push(`${indentStr}class ${node.name} {`);
+      
+      // Constructor
+      const constructor = node.methods.find(m => m.name === 'construct');
+      if (constructor) {
+        // TODO: Handle constructor parameters properly
+        const params = constructor.parameters || [];
+        const paramList = params.map(p => p.name || p).join(', ');
+        output.push(`${indentStr}  constructor(${paramList}) {`);
+        for (const stmt of constructor.body) {
+          generateStatement(stmt, output, indent + 2);
+        }
+        output.push(`${indentStr}  }`);
+        output.push('');
+      }
+      
+      // Other methods
+      for (const method of node.methods) {
+        if (method.name !== 'construct') {
+          const methodParams = (method.parameters || []).map(p => p.name || p).join(', ');
+          output.push(`${indentStr}  ${method.name}(${methodParams}) {`);
+          for (const stmt of method.body) {
+            generateStatement(stmt, output, indent + 2);
+          }
+          output.push(`${indentStr}  }`);
+          output.push('');
+        }
+      }
+      
+      output.push(`${indentStr}}`);
+      output.push('');
+      break;
+      
+    case 'Assignment':
+      output.push(`${indentStr}let ${node.target} = ${generateExpression(node.value)};`);
+      break;
+      
+    case 'PropertyAssignment':
+      const propChain = [node.object, ...node.properties].join('.');
+      output.push(`${indentStr}${propChain} = ${generateExpression(node.value)};`);
+      break;
+      
+    case 'InstanceVarAssignment':
+      const varName = node.variable.slice(1); // Remove @ prefix
+      output.push(`${indentStr}this.${varName} = ${generateExpression(node.value)};`);
+      break;
+      
     case 'PrintStatement':
-      output.push(`${indentStr}print(${JSON.stringify(node.value)});`);
+      if (typeof node.value === 'string') {
+        // Simple string literal
+        output.push(`${indentStr}print(${JSON.stringify(node.value)});`);
+      } else {
+        // Expression
+        output.push(`${indentStr}print(${generateExpression(node.value)});`);
+      }
       break;
       
     case 'CallExpression':
@@ -64,6 +124,9 @@ function generateExpression(node) {
     case 'StringLiteral':
       return JSON.stringify(node.value);
       
+    case 'InterpolatedString':
+      return generateInterpolatedString(node.value);
+      
     case 'NumberLiteral':
       return node.value;
       
@@ -76,7 +139,44 @@ function generateExpression(node) {
     case 'Identifier':
       return node.name;
       
+    case 'NewExpression':
+      const args = node.arguments.map(arg => generateExpression(arg)).join(', ');
+      return `new ${node.className}(${args})`;
+      
+    case 'PropertyAccess':
+      return [node.object, ...node.properties].join('.');
+      
+    case 'CallExpression':
+      const callArgs = node.arguments.map(arg => generateExpression(arg)).join(', ');
+      return `${node.name}(${callArgs})`;
+      
+    case 'MethodCall':
+      const methodArgs = node.arguments.map(arg => generateExpression(arg)).join(', ');
+      return `${node.object}.${node.method}(${methodArgs})`;
+      
+    case 'InstanceVar':
+      const varName = node.name.slice(1); // Remove @ prefix
+      return `this.${varName}`;
+      
+    case 'InstanceVarAccess':
+      const instanceVarName = node.variable.slice(1); // Remove @ prefix
+      return `this.${instanceVarName}.${node.properties.join('.')}`;
+      
     default:
       throw new Error(`Unknown expression type: ${node.kind}`);
   }
+}
+
+function generateInterpolatedString(template) {
+  // Convert "Hello #{name}" to `Hello ${name}`
+  // Handle @variable -> this.variable conversion
+  let result = template.replace(/#{([^}]+)}/g, (match, expression) => {
+    let processedExpression = expression.trim();
+    
+    // Handle function calls with @variables as arguments: format(@balance) -> format(this.balance)
+    processedExpression = processedExpression.replace(/@([a-zA-Z_][a-zA-Z0-9_]*)/g, 'this.$1');
+    
+    return '${' + processedExpression + '}';
+  });
+  return '`' + result + '`';
 }
