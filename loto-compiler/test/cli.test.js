@@ -158,4 +158,178 @@ end`);
       cleanupTestFile(testFile);
     }
   });
+
+  it('should run class-based program with constructor', () => {
+    const testFile = createTestFile('test_class.loto', `class User
+  name : string
+  
+  def construct(name)
+    @name = name
+  end
+  
+  def print() : string
+    "User: #{@name}"
+  end
+end
+
+def main
+  user = new User("Pablo")
+  print user
+end
+
+main()`);
+    
+    try {
+      const output = execSync(`node ${CLI_PATH} run ${testFile}`, { encoding: 'utf8' });
+      assert.ok(output.includes('User: Pablo'));
+    } finally {
+      cleanupTestFile(testFile);
+    }
+  });
+
+  it('should build and run interpolated string program', () => {
+    const testFile = createTestFile('test_interpolate.loto', `def greet(name)
+  message = "Hello #{name}!"
+  print message
+end
+
+greet("World")`);
+    
+    try {
+      // Test run command
+      const runOutput = execSync(`node ${CLI_PATH} run ${testFile}`, { encoding: 'utf8' });
+      assert.ok(runOutput.includes('Hello World!'));
+      
+      // Test build command
+      const buildOutput = execSync(`node ${CLI_PATH} build ${testFile}`, { encoding: 'utf8' });
+      assert.ok(buildOutput.includes('✓ Built'));
+      
+      // Check generated JavaScript
+      const jsFile = testFile.replace('.loto', '.js');
+      const jsContent = fs.readFileSync(jsFile, 'utf8');
+      assert.ok(jsContent.includes('`Hello ${name}!`'));
+    } finally {
+      cleanupTestFile(testFile);
+    }
+  });
+
+  it('should handle method calls with parameters', () => {
+    const testFile = createTestFile('test_math.loto', `def add(a, b)
+  a + b
+end
+
+def main
+  result = add(5, 3)
+  print "Result: #{result}"
+end
+
+main()`);
+    
+    try {
+      const output = execSync(`node ${CLI_PATH} run ${testFile}`, { encoding: 'utf8' });
+      assert.ok(output.includes('Result: 8'));
+    } finally {
+      cleanupTestFile(testFile);
+    }
+  });
+
+  it('should handle property assignments and access', () => {
+    const testFile = createTestFile('test_counter.loto', `class Counter
+  value : number
+  
+  def construct()
+    @value = 0
+  end
+  
+  def increment()
+    @value = @value + 1
+  end
+  
+  def print() : string
+    "Count: #{@value}"
+  end
+end
+
+def main
+  counter = new Counter()
+  counter.increment()
+  counter.increment()
+  print counter
+end
+
+main()`);
+    
+    try {
+      const output = execSync(`node ${CLI_PATH} run ${testFile}`, { encoding: 'utf8' });
+      assert.ok(output.includes('Count: 2'));
+    } finally {
+      cleanupTestFile(testFile);
+    }
+  });
+
+  it('should handle custom print methods correctly', () => {
+    const testFile = createTestFile('test_person.loto', `class Person
+  name : string
+  age : number
+  
+  def construct(name, age)
+    @name = name
+    @age = age
+  end
+  
+  def print() : string
+    "#{@name} (#{@age} years old)"
+  end
+end
+
+def main
+  person = new Person("Alice", 30)
+  print person
+  print "Direct string"
+end
+
+main()`);
+    
+    try {
+      const output = execSync(`node ${CLI_PATH} run ${testFile}`, { encoding: 'utf8' });
+      assert.ok(output.includes('Alice (30 years old)'));
+      assert.ok(output.includes('Direct string'));
+    } finally {
+      cleanupTestFile(testFile);
+    }
+  });
+
+  it('should handle complex nested expressions', () => {
+    const testFile = createTestFile('test_account.loto', `def format(amount)
+  "#{amount} USD"
+end
+
+class Account
+  owner : string
+  balance : number
+  
+  def construct(owner, balance)
+    @owner = owner
+    @balance = balance
+  end
+  
+  def print() : string
+    "Account[#{@owner}]: #{format(@balance)}"
+  end
+end
+
+def main
+  account = new Account("Bob", 1500)
+  print account
+end
+
+main()`);
+    
+    try {
+      const output = execSync(`node ${CLI_PATH} run ${testFile}`, { encoding: 'utf8' });
+      assert.ok(output.includes('Account[Bob]: 1500 USD'));
+    } finally {
+      cleanupTestFile(testFile);
+    }
+  });
 });

@@ -103,4 +103,150 @@ describe('End-to-End Tests', () => {
     assert.ok(basicContent.includes('#'));
     assert.ok(typedContent.includes('#'));
   });
+
+  it('should run complete wallet example with object-oriented features', () => {
+    // Create a comprehensive wallet program to test all OOP features
+    const walletProgram = `# wallet_test.loto
+def format(data : number) : string
+  "#{data} eur"
+end
+
+class User
+  id : string
+  name : string
+end
+
+class Wallet
+  owner : User
+  balance : number
+  active : boolean
+
+  def construct(owner, balance)
+    @owner = owner
+    @balance = balance
+    @active = true
+  end
+
+  def burn() : void
+    @active = false
+  end
+
+  def print() : string
+    "Wallet: {#{@owner.name}} - #{format(@balance)}"
+  end
+end
+
+def main
+  user = new User
+  user.id = "0001"
+  user.name = "Pablo"
+
+  wallet = new Wallet(user, 1000)
+  print wallet
+end
+
+main()`;
+    
+    // Write test file
+    fs.writeFileSync('test_wallet_e2e.loto', walletProgram);
+    
+    try {
+      // Test interpreted execution
+      const runOutput = execSync(`node ${CLI_PATH} run test_wallet_e2e.loto`, { encoding: 'utf8' });
+      assert.ok(runOutput.includes('Wallet: {Pablo} - 1000 eur'));
+      
+      // Test compilation
+      const buildOutput = execSync(`node ${CLI_PATH} build test_wallet_e2e.loto`, { encoding: 'utf8' });
+      assert.ok(buildOutput.includes('✓ Built test_wallet_e2e.js'));
+      
+      // Test running compiled JS
+      const jsOutput = execSync('node test_wallet_e2e.js', { encoding: 'utf8' });
+      assert.ok(jsOutput.includes('Wallet: {Pablo} - 1000 eur'));
+      
+      // Verify generated JS contains class and interpolation features
+      const jsContent = fs.readFileSync('test_wallet_e2e.js', 'utf8');
+      assert.ok(jsContent.includes('class User'));
+      assert.ok(jsContent.includes('class Wallet'));
+      assert.ok(jsContent.includes('constructor(owner, balance)'));
+      assert.ok(jsContent.includes('this.owner = owner'));
+      assert.ok(jsContent.includes('this.balance = balance'));
+      assert.ok(jsContent.includes('new User()'));
+      assert.ok(jsContent.includes('new Wallet(user, 1000)'));
+      assert.ok(jsContent.includes('`Wallet: {${this.owner.name}} - ${format(this.balance)}`'));
+    } finally {
+      // Clean up test files
+      if (fs.existsSync('test_wallet_e2e.loto')) {
+        fs.unlinkSync('test_wallet_e2e.loto');
+      }
+      if (fs.existsSync('test_wallet_e2e.js')) {
+        fs.unlinkSync('test_wallet_e2e.js');
+      }
+    }
+  });
+
+  it('should handle complex interpolation and nested property access', () => {
+    const complexProgram = `# complex_interpolation.loto
+class Profile
+  firstName : string
+  lastName : string
+  
+  def construct(first, last)
+    @firstName = first
+    @lastName = last
+  end
+end
+
+class Employee
+  profile : Profile
+  salary : number
+  
+  def construct(profile, salary)
+    @profile = profile
+    @salary = salary
+  end
+  
+  def print() : string
+    "Employee: #{@profile.firstName} #{@profile.lastName} - $#{@salary}"
+  end
+end
+
+def main
+  profile = new Profile("John", "Doe")
+  employee = new Employee(profile, 75000)
+  print employee
+end
+
+main()`;
+    
+    // Write test file
+    fs.writeFileSync('test_complex_e2e.loto', complexProgram);
+    
+    try {
+      // Test interpreted execution
+      const runOutput = execSync(`node ${CLI_PATH} run test_complex_e2e.loto`, { encoding: 'utf8' });
+      assert.ok(runOutput.includes('Employee: John Doe - $75000'));
+      
+      // Test compilation
+      const buildOutput = execSync(`node ${CLI_PATH} build test_complex_e2e.loto`, { encoding: 'utf8' });
+      assert.ok(buildOutput.includes('✓ Built test_complex_e2e.js'));
+      
+      // Test running compiled JS
+      const jsOutput = execSync('node test_complex_e2e.js', { encoding: 'utf8' });
+      assert.ok(jsOutput.includes('Employee: John Doe - $75000'));
+      
+      // Verify complex interpolation was compiled correctly
+      const jsContent = fs.readFileSync('test_complex_e2e.js', 'utf8');
+      assert.ok(jsContent.includes('${this.profile.firstName}'));
+      assert.ok(jsContent.includes('${this.profile.lastName}'));
+      assert.ok(jsContent.includes('${this.salary}'));
+    } finally {
+      // Clean up test files
+      if (fs.existsSync('test_complex_e2e.loto')) {
+        fs.unlinkSync('test_complex_e2e.loto');
+      }
+      if (fs.existsSync('test_complex_e2e.js')) {
+        fs.unlinkSync('test_complex_e2e.js');
+      }
+    }
+  });
 });

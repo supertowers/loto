@@ -103,7 +103,8 @@ function generateStatement(node, output, indent = 0) {
       break;
       
     case 'CallExpression':
-      output.push(`${indentStr}${node.name}();`);
+      const callArgs = node.arguments.map(arg => generateExpression(arg)).join(', ');
+      output.push(`${indentStr}${node.name}(${callArgs});`);
       break;
       
     case 'ReturnStatement':
@@ -161,6 +162,11 @@ function generateExpression(node) {
     case 'InstanceVarAccess':
       const instanceVarName = node.variable.slice(1); // Remove @ prefix
       return `this.${instanceVarName}.${node.properties.join('.')}`;
+      
+    case 'BinaryExpression':
+      const left = generateExpression(node.left);
+      const right = generateExpression(node.right);
+      return `${left} ${node.operator} ${right}`;
       
     default:
       throw new Error(`Unknown expression type: ${node.kind}`);

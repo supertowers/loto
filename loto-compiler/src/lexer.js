@@ -66,7 +66,8 @@ export function lex(src) {
       // Symbols
       if (remaining[0] === '(' || remaining[0] === ')' || remaining[0] === ':' || 
           remaining[0] === '.' || remaining[0] === '=' || remaining[0] === '{' || 
-          remaining[0] === '}' || remaining[0] === ',') {
+          remaining[0] === '}' || remaining[0] === ',' || remaining[0] === '+' || 
+          remaining[0] === '-' || remaining[0] === '*' || remaining[0] === '/') {
         push({ kind: 'symbol', value: remaining[0] });
         remaining = remaining.slice(1);
         continue;

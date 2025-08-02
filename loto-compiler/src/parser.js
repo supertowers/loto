@@ -43,7 +43,7 @@ export function parse(source) {
     };
   }
   
-  function parseStatement() {
+  function parseStatement(inFunctionBody = false) {
     skipNewlines();
     
     if (isAtEnd()) return null;
@@ -69,16 +69,33 @@ export function parse(source) {
     }
     
     if (token.kind === 'identifier') {
-      // Look ahead to see if this is an assignment
+      // Look ahead to see what type of statement this is
       const nextToken = tokens[position + 1];
-      if (nextToken && nextToken.kind === 'symbol' && nextToken.value === '=') {
-        return parseAssignment();
+      if (nextToken && nextToken.kind === 'symbol') {
+        if (nextToken.value === '=') {
+          return parseAssignment();
+        }
+        if (nextToken.value === '.') {
+          return parsePropertyAccess();
+        }
+        if (nextToken.value === '(') {
+          return parseCallExpression();
+        }
       }
-      // Look ahead for dot notation (property access)
-      if (nextToken && nextToken.kind === 'symbol' && nextToken.value === '.') {
-        return parsePropertyAccess();
+      
+      // Handle different contexts
+      if (inFunctionBody) {
+        // In function body: parse as expression (handles arithmetic, etc.) and wrap in ReturnStatement
+        const expr = parseExpression();
+        expect('newline');
+        return {
+          kind: 'ReturnStatement',
+          value: expr
+        };
+      } else {
+        // At top level: treat as function call without parentheses
+        return parseCallExpression();
       }
-      return parseCallExpression();
     }
     
     if (token.kind === 'instance_var') {
@@ -98,6 +115,7 @@ export function parse(source) {
         value: expr
       };
     }
+    
     
     // Skip tokens we don't handle yet
     if (token.kind === 'indent' || token.kind === 'dedent' || token.kind === 'newline') {
@@ -167,7 +185,7 @@ export function parse(source) {
     
     const body = [];
     while (peek().kind !== 'keyword' || peek().value !== 'end') {
-      const stmt = parseStatement();
+      const stmt = parseStatement(true); // inFunctionBody = true
       if (stmt) {
         body.push(stmt);
       }
@@ -242,9 +260,24 @@ export function parse(source) {
   function parseCallExpression() {
     const name = expect('identifier').value;
     
+    const args = [];
+    
     // Check if there are parentheses
     if (peek().kind === 'symbol' && peek().value === '(') {
       expect('symbol', '(');
+      
+      // Parse arguments
+      while (peek().kind !== 'symbol' || peek().value !== ')') {
+        args.push(parseExpression());
+        
+        // Handle comma-separated arguments
+        if (peek().kind === 'symbol' && peek().value === ',') {
+          expect('symbol', ',');
+        } else if (peek().kind !== 'symbol' || peek().value !== ')') {
+          throw new Error(`Expected ',' or ')' in function call`);
+        }
+      }
+      
       expect('symbol', ')');
     }
     
@@ -253,7 +286,7 @@ export function parse(source) {
     return {
       kind: 'CallExpression',
       name,
-      arguments: [] // TODO: add argument parsing
+      arguments: args
     };
   }
   
@@ -428,7 +461,7 @@ export function parse(source) {
         };
       }
       
-      // Check for simple function call
+      // Check for simple function call with parentheses
       if (peek().kind === 'symbol' && peek().value === '(') {
         next(); // consume '('
         
@@ -449,10 +482,29 @@ export function parse(source) {
         };
       }
       
-      return {
+      // For now, don't handle function calls without parentheses with arguments
+      // This causes conflicts with function parameter parsing
+      
+      // Create identifier, but check for arithmetic after
+      const leftExpr = {
         kind: 'Identifier',
         name
       };
+      
+      // Handle arithmetic operations
+      if (peek().kind === 'symbol' && ['+', '-', '*', '/'].includes(peek().value)) {
+        const operator = next().value;
+        const rightExpr = parseExpression();
+        
+        return {
+          kind: 'BinaryExpression',
+          left: leftExpr,
+          operator,
+          right: rightExpr
+        };
+      }
+      
+      return leftExpr;
     }
     
     if (token.kind === 'instance_var') {
@@ -466,17 +518,48 @@ export function parse(source) {
           properties.push(expect('identifier').value);
         }
         
-        return {
+        const instanceVarAccess = {
           kind: 'InstanceVarAccess',
           variable: varName,
           properties
         };
+        
+        // Handle arithmetic operations on instance variable access
+        if (peek().kind === 'symbol' && ['+', '-', '*', '/'].includes(peek().value)) {
+          const operator = next().value;
+          const rightExpr = parseExpression();
+          
+          return {
+            kind: 'BinaryExpression',
+            left: instanceVarAccess,
+            operator,
+            right: rightExpr
+          };
+        }
+        
+        return instanceVarAccess;
       }
       
-      return {
+      // Create instance variable, but check for arithmetic after
+      const instanceVar = {
         kind: 'InstanceVar',
         name: varName
       };
+      
+      // Handle arithmetic operations on instance variables
+      if (peek().kind === 'symbol' && ['+', '-', '*', '/'].includes(peek().value)) {
+        const operator = next().value;
+        const rightExpr = parseExpression();
+        
+        return {
+          kind: 'BinaryExpression',
+          left: instanceVar,
+          operator,
+          right: rightExpr
+        };
+      }
+      
+      return instanceVar;
     }
     
     if (token.kind === 'keyword') {
