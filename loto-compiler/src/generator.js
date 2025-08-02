@@ -107,6 +107,11 @@ function generateStatement(node, output, indent = 0) {
       output.push(`${indentStr}${node.name}(${callArgs});`);
       break;
       
+    case 'MethodCall':
+      const methodArgs = node.arguments.map(arg => generateExpression(arg)).join(', ');
+      output.push(`${indentStr}${node.object}.${node.method}(${methodArgs});`);
+      break;
+      
     case 'ReturnStatement':
       if (node.value) {
         output.push(`${indentStr}return ${generateExpression(node.value)};`);

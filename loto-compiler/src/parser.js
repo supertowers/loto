@@ -384,6 +384,33 @@ export function parse(source) {
       };
     }
     
+    // Check if this is a method call
+    if (peek().kind === 'symbol' && peek().value === '(') {
+      expect('symbol', '(');
+      
+      const args = [];
+      while (peek().kind !== 'symbol' || peek().value !== ')') {
+        args.push(parseExpression());
+        
+        // Handle comma-separated arguments
+        if (peek().kind === 'symbol' && peek().value === ',') {
+          expect('symbol', ',');
+        } else if (peek().kind !== 'symbol' || peek().value !== ')') {
+          throw new Error(`Expected ',' or ')' in method call`);
+        }
+      }
+      
+      expect('symbol', ')');
+      expect('newline');
+      
+      return {
+        kind: 'MethodCall',
+        object,
+        method: properties[properties.length - 1], // Last property is the method name
+        arguments: args
+      };
+    }
+    
     expect('newline');
     return {
       kind: 'PropertyAccess',
