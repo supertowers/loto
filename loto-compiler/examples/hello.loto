@@ -1,0 +1,8 @@
+# hello.loto
+# Prototype version: no types, runs interpreted by default
+
+def main
+  print "Hello, world!"
+end
+
+main()

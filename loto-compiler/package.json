@@ -1,0 +1,18 @@
+{
+  "name": "loto-compiler",
+  "version": "0.1.0",
+  "description": "Loto programming language compiler",
+  "type": "module",
+  "main": "src/cli.js",
+  "bin": {
+    "loto": "./src/cli.js"
+  },
+  "scripts": {
+    "dev": "node ./src/cli.js",
+    "test": "node --test test/*.test.js",
+    "prepublishOnly": "chmod +x ./src/cli.js"
+  },
+  "keywords": ["loto", "compiler", "transpiler", "programming-language"],
+  "author": "Pablo López Torres <pablo@hexagon.sh>",
+  "license": "MIT"
+}

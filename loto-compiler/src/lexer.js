@@ -1,0 +1,98 @@
+// lexer.js
+// Loto lexer - converts source code into tokens
+
+export function lex(src) {
+  const tokens = [];
+  const indentStack = [0];
+  const lines = src.split(/\r?\n/);
+  
+  const push = (token) => tokens.push(token);
+
+  for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+    const line = lines[lineNum];
+    
+    // Handle indentation
+    const indentMatch = line.match(/^\s*/);
+    const currentIndent = indentMatch ? indentMatch[0].length : 0;
+    const content = line.trim();
+    
+    // Skip empty lines and comments
+    if (!content || content.startsWith('#')) {
+      push({ kind: 'newline' });
+      continue;
+    }
+    
+    // Handle indentation changes
+    if (currentIndent > indentStack[indentStack.length - 1]) {
+      indentStack.push(currentIndent);
+      push({ kind: 'indent' });
+    } else if (currentIndent < indentStack[indentStack.length - 1]) {
+      while (indentStack.length > 1 && currentIndent < indentStack[indentStack.length - 1]) {
+        indentStack.pop();
+        push({ kind: 'dedent' });
+      }
+      if (currentIndent !== indentStack[indentStack.length - 1]) {
+        throw new Error(`Indentation error at line ${lineNum + 1}`);
+      }
+    }
+    
+    // Tokenize the line content
+    let remaining = content;
+    
+    while (remaining.length > 0) {
+      // Skip whitespace
+      const wsMatch = remaining.match(/^\s+/);
+      if (wsMatch) {
+        remaining = remaining.slice(wsMatch[0].length);
+        continue;
+      }
+      
+      // String literals
+      const stringMatch = remaining.match(/^"([^"]*)"/);
+      if (stringMatch) {
+        push({ kind: 'string', value: stringMatch[1] });
+        remaining = remaining.slice(stringMatch[0].length);
+        continue;
+      }
+      
+      // Symbols
+      if (remaining[0] === '(' || remaining[0] === ')' || remaining[0] === ':') {
+        push({ kind: 'symbol', value: remaining[0] });
+        remaining = remaining.slice(1);
+        continue;
+      }
+      
+      // Keywords and identifiers
+      const wordMatch = remaining.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
+      if (wordMatch) {
+        const word = wordMatch[0];
+        const keywords = ['def', 'end', 'print', 'if', 'else', 'elsif', 'return', 'true', 'false', 'null'];
+        const kind = keywords.includes(word) ? 'keyword' : 'identifier';
+        push({ kind, value: word });
+        remaining = remaining.slice(word.length);
+        continue;
+      }
+      
+      // Numbers
+      const numberMatch = remaining.match(/^\d+(\.\d+)?/);
+      if (numberMatch) {
+        push({ kind: 'number', value: numberMatch[0] });
+        remaining = remaining.slice(numberMatch[0].length);
+        continue;
+      }
+      
+      throw new Error(`Unknown token at line ${lineNum + 1}: "${remaining[0]}"`);
+    }
+    
+    push({ kind: 'newline' });
+  }
+  
+  // Close any remaining indentation levels
+  while (indentStack.length > 1) {
+    indentStack.pop();
+    push({ kind: 'dedent' });
+  }
+  
+  push({ kind: 'eof' });
+  return tokens;
+}
