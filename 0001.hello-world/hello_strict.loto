@@ -1,0 +1,12 @@
+
+# hello_strict.loto
+# ----------------------------------------------------------
+# Stable version: types added so the module can be compiled.
+# All primitive types are lowercase.
+
+def main() : void
+  print "Hello, world!"
+end
+
+main()
+
