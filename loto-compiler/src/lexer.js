@@ -6,9 +6,11 @@ export function lex(src) {
   const indentStack = [0];
   const lines = src.split(/\r?\n/);
   
-  const push = (token) => tokens.push(token);
+  let currentLineNum = 0;
+  const push = (token) => tokens.push({ ...token, line: currentLineNum + 1 });
 
   for (let lineNum = 0; lineNum < lines.length; lineNum++) {
+    currentLineNum = lineNum;
     const line = lines[lineNum];
     
     // Handle indentation
@@ -16,13 +18,13 @@ export function lex(src) {
     const currentIndent = indentMatch ? indentMatch[0].length : 0;
     const content = line.trim();
     
-    // Skip empty lines and comments
+    // Skip empty lines and comments (but still emit newlines)
     if (!content || content.startsWith('#')) {
       push({ kind: 'newline' });
       continue;
     }
     
-    // Handle indentation changes
+    // Handle indentation changes for non-empty lines
     if (currentIndent > indentStack[indentStack.length - 1]) {
       indentStack.push(currentIndent);
       push({ kind: 'indent' });
@@ -47,6 +49,15 @@ export function lex(src) {
         continue;
       }
       
+      // JSX interpolation {{...}}
+      if (remaining.startsWith('{{') && remaining.includes('}}')) {
+        const closeIndex = remaining.indexOf('}}');
+        const content = remaining.slice(2, closeIndex);
+        push({ kind: 'jsx_interpolation', value: content });
+        remaining = remaining.slice(closeIndex + 2);
+        continue;
+      }
+      
       // String literals (with interpolation support)
       const stringMatch = remaining.match(/^"([^"]*)"/);
       if (stringMatch) {
@@ -63,12 +74,29 @@ export function lex(src) {
         continue;
       }
       
-      // Symbols
+      // Multi-character operators
+      const multiCharOps = ['==', '!=', '<=', '>=', '&&', '||'];
+      let foundMultiChar = false;
+      for (const op of multiCharOps) {
+        if (remaining.startsWith(op)) {
+          push({ kind: 'operator', value: op });
+          remaining = remaining.slice(op.length);
+          foundMultiChar = true;
+          break;
+        }
+      }
+      if (foundMultiChar) continue;
+      
+      // Single-character symbols and operators
       if (remaining[0] === '(' || remaining[0] === ')' || remaining[0] === ':' || 
           remaining[0] === '.' || remaining[0] === '=' || remaining[0] === '{' || 
           remaining[0] === '}' || remaining[0] === ',' || remaining[0] === '+' || 
-          remaining[0] === '-' || remaining[0] === '*' || remaining[0] === '/') {
-        push({ kind: 'symbol', value: remaining[0] });
+          remaining[0] === '-' || remaining[0] === '*' || remaining[0] === '/' || 
+          remaining[0] === '!' || remaining[0] === '?' || remaining[0] === ';' ||
+          remaining[0] === '<' || remaining[0] === '>') {
+        const value = remaining[0];
+        const kind = ['<', '>', '!'].includes(value) ? 'operator' : 'symbol';
+        push({ kind, value });
         remaining = remaining.slice(1);
         continue;
       }
@@ -87,7 +115,7 @@ export function lex(src) {
       const wordMatch = remaining.match(/^[a-zA-Z_][a-zA-Z0-9_]*/);
       if (wordMatch) {
         const word = wordMatch[0];
-        const keywords = ['def', 'end', 'print', 'if', 'else', 'elsif', 'return', 'true', 'false', 'null', 'class', 'new', 'construct'];
+        const keywords = ['def', 'end', 'print', 'if', 'else', 'elsif', 'return', 'true', 'false', 'null', 'class', 'new', 'construct', 'component', 'props', 'state', 'render', 'style'];
         const kind = keywords.includes(word) ? 'keyword' : 'identifier';
         push({ kind, value: word });
         remaining = remaining.slice(word.length);

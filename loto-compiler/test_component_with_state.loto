@@ -1,0 +1,13 @@
+component Counter
+  props
+    start : number = 0
+  end
+
+  state
+    count : number = start
+  end
+
+  def increment()
+    @count = @count + 1
+  end
+end

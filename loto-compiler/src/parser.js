@@ -14,7 +14,8 @@ export function parse(source) {
   function expect(kind, value = null) {
     const token = next();
     if (token.kind !== kind || (value && token.value !== value)) {
-      throw new Error(`Expected ${kind}${value ? ` "${value}"` : ''} but got ${JSON.stringify(token)}`);
+      const lineInfo = token.line ? ` at line ${token.line}` : '';
+      throw new Error(`Expected ${kind}${value ? ` "${value}"` : ''} but got ${JSON.stringify(token)}${lineInfo}`);
     }
     return token;
   }
@@ -64,7 +65,8 @@ export function parse(source) {
           // This will be handled by the calling context (class or function)
           return null;
         default:
-          throw new Error(`Unexpected keyword: ${token.value}`);
+          const lineInfo = token.line ? ` at line ${token.line}` : '';
+          throw new Error(`Unexpected keyword: ${token.value}${lineInfo}`);
       }
     }
     
@@ -123,7 +125,8 @@ export function parse(source) {
       return null;
     }
     
-    throw new Error(`Unexpected token: ${JSON.stringify(token)}`);
+    const lineInfo = token.line ? ` at line ${token.line}` : '';
+    throw new Error(`Unexpected token: ${JSON.stringify(token)}${lineInfo}`);
   }
   
   function parseInstanceVarAssignment() {

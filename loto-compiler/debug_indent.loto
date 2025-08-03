@@ -1,0 +1,7 @@
+component Test
+  props
+  end
+
+  state
+  end
+end

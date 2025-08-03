@@ -1,0 +1,13 @@
+def test_if(x : number)
+  if x > 5
+    print "x is greater than 5"
+  elsif x == 5
+    print "x equals 5"
+  else
+    print "x is less than 5"
+  end
+end
+
+test_if(3)
+test_if(5)
+test_if(7)

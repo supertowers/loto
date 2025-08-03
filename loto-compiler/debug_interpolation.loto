@@ -1,0 +1,9 @@
+component TestComponent
+  state
+    message : string = "Hello"
+  end
+  
+  render
+    Text Welcome {{@message}}!
+  end
+end
