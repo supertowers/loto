@@ -1,0 +1,383 @@
+
+component ProductCard:
+  props:
+    product: object
+    onAddToCart: function
+    onToggleFavorite: function
+    isInCart: boolean
+    isFavorite: boolean
+    showQuickView: boolean
+
+  state:
+    quantity: 1
+    selectedVariant: null
+    showDetails: false
+    isLoading: false
+    imageIndex: 0
+
+  private handleQuantityChange(delta):
+    @quantity = Math.max(1, @quantity + delta)
+
+  selectVariant(variant):
+    @selectedVariant = variant
+
+  toggleDetails():
+    @showDetails = !@showDetails
+
+  handleAddToCart():
+    @isLoading = true
+    @onAddToCart(@product, @quantity, @selectedVariant)
+    setTimeout(() => {
+      @isLoading = false
+    }, 1000)
+
+  nextImage():
+    @imageIndex = (@imageIndex + 1) % @product.images.length
+
+  prevImage():
+    @imageIndex = @imageIndex === 0 ? @product.images.length - 1 : @imageIndex - 1
+
+  formatPrice(price):
+    "$ {{price.toFixed(2)}}"
+
+  getDiscountPercentage():
+    if (@product.originalPrice && @product.price < @product.originalPrice):
+      return Math.round(((@product.originalPrice - @product.price) / @product.originalPrice) * 100)
+    return 0
+
+  render:
+    .product-card
+      .product-image-container
+        img.product-image(
+          src={{@product.images[@imageIndex]}}
+          alt={{@product.name}}
+        )
+
+        .image-navigation
+          button.nav-btn.prev-btn(on:click=@prevImage()) ‹
+          button.nav-btn.next-btn(on:click=@nextImage()) ›
+
+        .product-badges
+          span.discount-badge {{@getDiscountPercentage()}}% OFF
+          span.new-badge NEW
+
+        button.favorite-btn(on:click=@onToggleFavorite(@product.id))
+          {{@isFavorite ? "♥" : "♡"}}
+
+      .product-info
+        h3.product-title {{@product.name}}
+        p.product-brand {{@product.brand}}
+
+        .product-rating
+          span.stars {{@product.rating}}
+          span.review-count ({{@product.reviewCount}} reviews)
+
+        .product-pricing
+          span.current-price {{@formatPrice(@product.price)}}
+          span.original-price {{@formatPrice(@product.originalPrice)}}
+
+        .product-variants
+          span.variant-label Color:
+          .variant-options
+            button.variant-option(on:click=@selectVariant(variant))
+              {{variant.name}}
+
+        .product-actions
+          .quantity-selector
+            button.qty-btn(on:click=@handleQuantityChange(-1)) -
+            span.quantity {{@quantity}}
+            button.qty-btn(on:click=@handleQuantityChange(1)) +
+
+          button.add-to-cart-btn(
+            on:click=@handleAddToCart()
+            disabled={{@isLoading}}
+          )
+            {{@isLoading ? "Adding..." : (@isInCart ? "Update Cart" : "Add to Cart")}}
+
+        .product-features
+          span.feature Free Shipping
+          span.feature 30-Day Returns
+          span.feature 1-Year Warranty
+
+        button.details-toggle(on:click=@toggleDetails())
+          {{@showDetails ? "Hide Details" : "Show Details"}}
+
+        .product-details
+          .detail-section
+            h4 Description
+            p {{@product.description}}
+
+          .detail-section
+            h4 Specifications
+            ul.spec-list
+              li Material: {{@product.specs.material}}
+              li Weight: {{@product.specs.weight}}
+              li Dimensions: {{@product.specs.dimensions}}
+
+  styles:
+    .product-card
+      border: "1px solid #e0e0e0"
+      borderRadius: "12px"
+      overflow: "hidden"
+      backgroundColor: "#fff"
+      boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+      transition: "transform 0.2s ease, box-shadow 0.2s ease"
+      maxWidth: "320px"
+      margin: "16px"
+
+    .product-card:hover
+      transform: "translateY(-4px)"
+      boxShadow: "0 8px 24px rgba(0,0,0,0.15)"
+
+    .product-image-container
+      position: "relative"
+      paddingBottom: "75%"
+      overflow: "hidden"
+
+    .product-image
+      position: "absolute"
+      top: "0"
+      left: "0"
+      width: "100%"
+      height: "100%"
+      objectFit: "cover"
+
+    .image-navigation
+      position: "absolute"
+      top: "50%"
+      left: "0"
+      right: "0"
+      display: "flex"
+      justifyContent: "space-between"
+      padding: "0 8px"
+      transform: "translateY(-50%)"
+      opacity: "0"
+      transition: "opacity 0.2s ease"
+
+    .product-card:hover .image-navigation
+      opacity: "1"
+
+    .nav-btn
+      backgroundColor: "rgba(255,255,255,0.9)"
+      border: "none"
+      borderRadius: "50%"
+      width: "32px"
+      height: "32px"
+      display: "flex"
+      alignItems: "center"
+      justifyContent: "center"
+      cursor: "pointer"
+      fontSize: "18px"
+      fontWeight: "bold"
+
+    .product-badges
+      position: "absolute"
+      top: "8px"
+      left: "8px"
+      display: "flex"
+      flexDirection: "column"
+      gap: "4px"
+
+    .discount-badge
+      backgroundColor: "#ff4444"
+      color: "#fff"
+      padding: "4px 8px"
+      borderRadius: "4px"
+      fontSize: "12px"
+      fontWeight: "bold"
+
+    .new-badge
+      backgroundColor: "#00aa44"
+      color: "#fff"
+      padding: "4px 8px"
+      borderRadius: "4px"
+      fontSize: "12px"
+      fontWeight: "bold"
+
+    .favorite-btn
+      position: "absolute"
+      top: "8px"
+      right: "8px"
+      backgroundColor: "rgba(255,255,255,0.9)"
+      border: "none"
+      borderRadius: "50%"
+      width: "36px"
+      height: "36px"
+      display: "flex"
+      alignItems: "center"
+      justifyContent: "center"
+      cursor: "pointer"
+      fontSize: "18px"
+      color: "#ff4444"
+
+    .product-info
+      padding: "16px"
+
+    .product-title
+      fontSize: "18px"
+      fontWeight: "600"
+      margin: "0 0 4px 0"
+      color: "#333"
+
+    .product-brand
+      fontSize: "14px"
+      color: "#666"
+      margin: "0 0 8px 0"
+
+    .product-rating
+      display: "flex"
+      alignItems: "center"
+      gap: "8px"
+      margin: "0 0 12px 0"
+
+    .stars
+      color: "#ffa500"
+      fontSize: "14px"
+
+    .review-count
+      fontSize: "12px"
+      color: "#888"
+
+    .product-pricing
+      display: "flex"
+      alignItems: "center"
+      gap: "8px"
+      margin: "0 0 16px 0"
+
+    .current-price
+      fontSize: "20px"
+      fontWeight: "bold"
+      color: "#333"
+
+    .original-price
+      fontSize: "16px"
+      color: "#888"
+      textDecoration: "line-through"
+
+    .product-variants
+      margin: "0 0 16px 0"
+
+    .variant-label
+      fontSize: "14px"
+      fontWeight: "500"
+      color: "#333"
+      marginBottom: "8px"
+      display: "block"
+
+    .variant-options
+      display: "flex"
+      gap: "8px"
+      flexWrap: "wrap"
+
+    .variant-option
+      padding: "6px 12px"
+      border: "1px solid #ddd"
+      borderRadius: "6px"
+      backgroundColor: "#fff"
+      cursor: "pointer"
+      fontSize: "12px"
+      transition: "all 0.2s ease"
+
+    .variant-option:hover
+      borderColor: "#007bff"
+      backgroundColor: "#f0f8ff"
+
+    .product-actions
+      display: "flex"
+      gap: "12px"
+      alignItems: "center"
+      margin: "0 0 16px 0"
+
+    .quantity-selector
+      display: "flex"
+      alignItems: "center"
+      border: "1px solid #ddd"
+      borderRadius: "6px"
+      overflow: "hidden"
+
+    .qty-btn
+      backgroundColor: "#f8f9fa"
+      border: "none"
+      padding: "8px 12px"
+      cursor: "pointer"
+      fontSize: "16px"
+      fontWeight: "bold"
+
+    .quantity
+      padding: "8px 16px"
+      fontSize: "14px"
+      fontWeight: "500"
+      minWidth: "40px"
+      textAlign: "center"
+
+    .add-to-cart-btn
+      flex: "1"
+      backgroundColor: "#007bff"
+      color: "#fff"
+      border: "none"
+      padding: "12px 16px"
+      borderRadius: "6px"
+      fontSize: "14px"
+      fontWeight: "500"
+      cursor: "pointer"
+      transition: "background-color 0.2s ease"
+
+    .add-to-cart-btn:hover
+      backgroundColor: "#0056b3"
+
+    .add-to-cart-btn:disabled
+      backgroundColor: "#6c757d"
+      cursor: "not-allowed"
+
+    .product-features
+      display: "flex"
+      gap: "8px"
+      flexWrap: "wrap"
+      margin: "0 0 16px 0"
+
+    .feature
+      fontSize: "12px"
+      color: "#28a745"
+      backgroundColor: "#f8f9fa"
+      padding: "4px 8px"
+      borderRadius: "4px"
+      border: "1px solid #e9ecef"
+
+    .details-toggle
+      backgroundColor: "transparent"
+      border: "none"
+      color: "#007bff"
+      fontSize: "14px"
+      cursor: "pointer"
+      padding: "0"
+      textDecoration: "underline"
+      margin: "0 0 16px 0"
+
+    .product-details
+      borderTop: "1px solid #e9ecef"
+      paddingTop: "16px"
+
+    .detail-section
+      marginBottom: "16px"
+
+    .detail-section h4
+      fontSize: "14px"
+      fontWeight: "600"
+      margin: "0 0 8px 0"
+      color: "#333"
+
+    .detail-section p
+      fontSize: "13px"
+      color: "#666"
+      lineHeight: "1.4"
+      margin: "0"
+
+    .spec-list
+      listStyle: "none"
+      padding: "0"
+      margin: "0"
+
+    .spec-list li
+      fontSize: "13px"
+      color: "#666"
+      padding: "2px 0"
