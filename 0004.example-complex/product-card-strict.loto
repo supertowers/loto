@@ -1,24 +1,55 @@
+# product-card-strict.loto
+# ----------------------------------------------------------
+# Strict version with full type definitions and interfaces
+
+interface ProductImage:
+  url: string
+  alt: string
+
+interface ProductSpecs:
+  material: string
+  weight: string
+  dimensions: string
+
+interface ProductVariant:
+  id: string
+  name: string
+  color: string
+  price: number
+
+interface Product:
+  id: string
+  name: string
+  brand: string
+  description: string
+  price: number
+  originalPrice: number
+  rating: number
+  reviewCount: number
+  images: ProductImage[]
+  specs: ProductSpecs
+  variants: ProductVariant[]
 
 component ProductCard:
   props:
-    product: object
-    onAddToCart: function
-    onToggleFavorite: function
+    product: Product
+    onAddToCart: (product: Product, quantity: number, variant: ProductVariant?) => void
+    onToggleFavorite: (productId: string) => void
     isInCart: boolean
     isFavorite: boolean
     showQuickView: boolean
 
   state:
-    quantity: 1
-    selectedVariant: null
-    showDetails: false
-    isLoading: false
-    imageIndex: 0
+    quantity: number = 1
+    selectedVariant: ProductVariant?
+    showDetails: boolean = false
+    isLoading: boolean = false
+    imageIndex: number = 0
 
   private handleQuantityChange(delta: number): void
     @quantity = Math.max(1, @quantity + delta)
 
-  public selectVariant(variant): void
+  public selectVariant(variant: ProductVariant): void
     @selectedVariant = variant
 
   public toggleDetails(): void
@@ -49,10 +80,10 @@ component ProductCard:
     .product-card
       .product-image-container
         img.product-image(
-          src={{@product.images[@imageIndex]}}
-          alt={{@product.name}}
+          src={{@product.images[@imageIndex].url}}
+          alt={{@product.images[@imageIndex].alt}}
         )
-
+        
         .image-navigation
           button.nav-btn.prev-btn(on:click=@prevImage()) ‹
           button.nav-btn.next-btn(on:click=@nextImage()) ›
@@ -67,7 +98,7 @@ component ProductCard:
       .product-info
         h3.product-title {{@product.name}}
         p.product-brand {{@product.brand}}
-
+        
         .product-rating
           span.stars {{@product.rating}}
           span.review-count ({{@product.reviewCount}} reviews)
@@ -79,8 +110,12 @@ component ProductCard:
         .product-variants
           span.variant-label Color:
           .variant-options
-            button.variant-option(on:click=@selectVariant(variant))
-              {{variant.name}}
+            for variant in @product.variants:
+              button.variant-option(
+                on:click=@selectVariant(variant)
+                class={{@selectedVariant?.id === variant.id ? "selected" : ""}}
+              )
+                {{variant.name}}
 
         .product-actions
           .quantity-selector
@@ -102,17 +137,18 @@ component ProductCard:
         button.details-toggle(on:click=@toggleDetails())
           {{@showDetails ? "Hide Details" : "Show Details"}}
 
-        .product-details
-          .detail-section
-            h4 Description
-            p {{@product.description}}
-
-          .detail-section
-            h4 Specifications
-            ul.spec-list
-              li Material: {{@product.specs.material}}
-              li Weight: {{@product.specs.weight}}
-              li Dimensions: {{@product.specs.dimensions}}
+        if @showDetails:
+          .product-details
+            .detail-section
+              h4 Description
+              p {{@product.description}}
+            
+            .detail-section
+              h4 Specifications
+              ul.spec-list
+                li Material: {{@product.specs.material}}
+                li Weight: {{@product.specs.weight}}
+                li Dimensions: {{@product.specs.dimensions}}
 
   styles:
     .product-card
@@ -281,6 +317,11 @@ component ProductCard:
     .variant-option:hover
       borderColor: "#007bff"
       backgroundColor: "#f0f8ff"
+
+    .variant-option.selected
+      borderColor: "#007bff"
+      backgroundColor: "#007bff"
+      color: "#fff"
 
     .product-actions
       display: "flex"

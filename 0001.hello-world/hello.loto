@@ -3,9 +3,8 @@
 # ----------------------------------------------------------
 # Prototype version: no types, runs interpreted by default.
 
-def main
+public main(): void
   print "Hello, world!"
-end
 
 main()
 

@@ -1,44 +1,36 @@
 # uses automatic casting string -> number
-def format(data : number) : string
-  "#{data} eur"
-end
+public format(data: number): string
+  "{{data}} eur"
 
-class User
-  id : string
-  name : string
-end
+class User:
+  id: string
+  name: string
 
-class Wallet
-  owner : User
-  balance : number
-  active : boolean
+class Wallet:
+  owner: User
+  balance: number
+  active: boolean
 
-  def construct(owner, balance)
+  public construct(owner, balance)
     @owner = owner
     @balance = balance
     @active = true
-  end
 
-  def burn() : void
+  public burn(): void
     @active = false
-  end
 
   # print() is a special method: it's called when the instance is passed to `print`
   # and defines the CLI output for this object
-  def print() : string
-    "Wallet: {#{@owner.name}} - #{format(@balance)}"
-  end
+  public print(): string
+    "Wallet: {{{@owner.name}}} - {{format(@balance)}}"
 
-end
-
-def main
+public main()
   user = new User
   user.id = "0001"
   user.name = "Pablo"
 
   wallet = new Wallet(user, 1000)
   print wallet
-end
 
 # expected: "Wallet: {Pablo} - 1000 eur
 main()

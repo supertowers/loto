@@ -1,26 +1,21 @@
 
-component Counter
-  props
-    start : number = 0
-  end
+component Counter:
+  props:
+    start: number = 0
 
-  state
-    count : number = start
-  end
+  state:
+    count: number = start
 
-  def increment()
+  public increment(): void
     @count = @count + 1
-  end
 
-  render
-    # both syntaxes: .counter or (class="counter") are available
+  render:
     View.counter
-      Text(class="label") Count: {{@count}}
+      Text.label Count: {{@count}}
       Pressable(on:press=@increment())
         Text(class="buttonText") +1
-  end
 
-  style
+  styles:
     .counter
       backgroundColor: "#f4f4f4"
       padding: 12
@@ -34,6 +29,4 @@ component Counter
       paddingVertical: 8
       paddingHorizontal: 12
       borderRadius: 6
-  end
-end
 
