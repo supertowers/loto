@@ -1,3 +1,0 @@
-def test
-  print "hello"
-  missing_end_keyword

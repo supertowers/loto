@@ -1,6 +1,0 @@
-component Test
-  render
-    Pressable(on:press=@increment())
-      Text +1
-  end
-end

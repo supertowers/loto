@@ -1,5 +1,0 @@
-component Test
-  render
-    Text(class="label") Count
-  end
-end

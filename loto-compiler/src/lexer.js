@@ -95,7 +95,7 @@ export function lex(src) {
           remaining[0] === '!' || remaining[0] === '?' || remaining[0] === ';' ||
           remaining[0] === '<' || remaining[0] === '>') {
         const value = remaining[0];
-        const kind = ['<', '>', '!'].includes(value) ? 'operator' : 'symbol';
+        const kind = ['<', '>'].includes(value) ? 'operator' : 'symbol';
         push({ kind, value });
         remaining = remaining.slice(1);
         continue;

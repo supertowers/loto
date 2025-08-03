@@ -1,6 +1,0 @@
-component TestComponent
-  render
-    View.container
-      Text(class="description") This is content
-  end
-end
