@@ -381,7 +381,10 @@ function generateStyles(styleBlock, componentName, output) {
   output.push(`const styles = {`);
   
   for (const rule of styleBlock.rules) {
-    output.push(`  ${rule.selector}: {`);
+    // Convert CSS selector to valid JavaScript property name
+    // .counter -> counter, .label -> label, etc.
+    const jsPropertyName = rule.selector.startsWith('.') ? rule.selector.slice(1) : rule.selector;
+    output.push(`  ${jsPropertyName}: {`);
     for (const decl of rule.declarations) {
       const value = generateExpression(decl.value);
       output.push(`    ${decl.property}: ${value},`);

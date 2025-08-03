@@ -448,4 +448,71 @@ describe('Generator', () => {
     assert.ok(jsCode.includes('print() {'));
     assert.ok(jsCode.includes('return `Balance: ${this.balance}`;'));
   });
+
+  it('should generate valid JavaScript object properties for CSS selectors', () => {
+    const ast = {
+      kind: 'Program',
+      body: [
+        {
+          kind: 'ComponentDeclaration',
+          name: 'TestComponent',
+          props: [],
+          state: [],
+          methods: [],
+          renderBlock: {
+            kind: 'RenderBlock',
+            elements: [
+              {
+                kind: 'JSXElement',
+                name: 'View',
+                className: 'container',
+                attributes: [],
+                children: []
+              }
+            ]
+          },
+          styleBlock: {
+            kind: 'StyleBlock',
+            rules: [
+              {
+                selector: '.container',
+                declarations: [
+                  {
+                    property: 'backgroundColor',
+                    value: { kind: 'StringLiteral', value: '#f0f0f0' }
+                  },
+                  {
+                    property: 'padding',
+                    value: { kind: 'NumberLiteral', value: '16' }
+                  }
+                ]
+              },
+              {
+                selector: '.button-text',
+                declarations: [
+                  {
+                    property: 'fontSize',
+                    value: { kind: 'NumberLiteral', value: '14' }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    };
+    
+    const jsCode = generate(ast);
+    
+    // Should convert CSS selectors to valid JavaScript property names
+    assert.ok(jsCode.includes('container: {'));
+    assert.ok(jsCode.includes('button-text: {'));
+    assert.ok(jsCode.includes('backgroundColor: "#f0f0f0",'));
+    assert.ok(jsCode.includes('padding: 16,'));
+    assert.ok(jsCode.includes('fontSize: 14,'));
+    
+    // Should NOT include invalid CSS selector syntax
+    assert.ok(!jsCode.includes('.container: {'));
+    assert.ok(!jsCode.includes('.button-text: {'));
+  });
 });
